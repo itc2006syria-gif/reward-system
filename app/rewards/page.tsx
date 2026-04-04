@@ -1,145 +1,100 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
+import { useState } from "react";
 import AuthGuard from "../components/AuthGuard";
+import Sidebar from "../dashboard/Sidebar";
 import { Gift } from "lucide-react";
 
 export default function RewardsPage() {
-  const [claimedToday, setClaimedToday] = useState(false);
-  const [timeLeft, setTimeLeft] = useState("");
-  const [balance, setBalance] = useState(0);
-  const [streak, setStreak] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const savedBalance = localStorage.getItem("walletBalance");
-    const savedStreak = localStorage.getItem("streak");
-    const savedLastClaim = localStorage.getItem("lastClaim");
+  async function claimDaily() {
+    setLoading(true);
 
-    if (savedBalance) setBalance(parseFloat(savedBalance));
-    if (savedStreak) setStreak(parseInt(savedStreak));
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-    if (savedLastClaim) {
-      const today = new Date().toDateString();
-      const last = new Date(savedLastClaim).toDateString();
-      if (today === last) setClaimedToday(true);
-    }
+    const res = await fetch("/api/rewards/daily", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user.email }),
+    });
 
-    const interval = setInterval(() => {
-      updateTimer();
-    }, 1000);
+    const data = await res.json();
+    setLoading(false);
 
-    return () => clearInterval(interval);
-  }, []);
-
-  const updateTimer = () => {
-    const now = new Date();
-    const midnight = new Date();
-
-    midnight.setHours(24, 0, 0, 0);
-
-    const diff = midnight.getTime() - now.getTime();
-
-    if (diff <= 0) {
-      setTimeLeft("00:00:00");
-      setClaimedToday(false);
-      return;
-    }
-
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff / (1000 * 60)) % 60);
-    const seconds = Math.floor((diff / 1000) % 60);
-
-    setTimeLeft(
-      `${hours.toString().padStart(2, "0")}:${minutes
-        .toString()
-        .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-    );
-  };
-
-  const handleClaim = () => {
-    if (claimedToday) return;
-
-    const now = new Date().toISOString();
-    const today = new Date().toDateString();
-    const savedLastClaim = localStorage.getItem("lastClaim");
-
-    if (savedLastClaim) {
-      const last = new Date(savedLastClaim).toDateString();
-      const diff = Date.now() - new Date(savedLastClaim).getTime();
-      const oneDay = 24 * 60 * 60 * 1000;
-
-      if (today === last) return;
-
-      if (diff < oneDay * 2) {
-        const newStreak = streak + 1;
-        setStreak(newStreak);
-        localStorage.setItem("streak", newStreak.toString());
-      } else {
-        setStreak(1);
-        localStorage.setItem("streak", "1");
-      }
+    if (data.error) {
+      alert(data.error);
     } else {
-      setStreak(1);
-      localStorage.setItem("streak", "1");
+      alert("Daily reward claimed!");
     }
-
-    localStorage.setItem("lastClaim", now);
-    setClaimedToday(true);
-
-    const newBalance = balance + 1;
-    setBalance(newBalance);
-    localStorage.setItem("walletBalance", newBalance.toString());
-
-    const tx = {
-      type: "Daily Reward",
-      amount: 1,
-      date: new Date().toLocaleString(),
-    };
-
-    const savedTx = localStorage.getItem("transactions");
-    const updatedTx = savedTx ? [tx, ...JSON.parse(savedTx)] : [tx];
-
-    localStorage.setItem("transactions", JSON.stringify(updatedTx));
-  };
+  }
 
   return (
     <AuthGuard>
-      <div className="flex">
+      <div className="flex min-h-screen bg-black text-white">
         <Sidebar />
 
-        <div className="ml-64 w-full p-10 text-white">
-          <h1 className="text-3xl font-bold mb-6">Daily Rewards</h1>
+        <div className="flex-1 p-10 space-y-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 text-transparent bg-clip-text">
+            Rewards
+          </h1>
 
-          <div className="bg-[#111] border border-[#333] p-8 rounded-lg max-w-xl">
-            <h2 className="text-xl font-semibold mb-4">Claim Your Daily Reward</h2>
+          <p className="text-gray-400">
+            Claim your daily reward and check available bonuses.
+          </p>
 
-            <p className="text-gray-400 mb-6">
-              Claim once every 24 hours to increase your streak and earn USDT.
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-            <button
-              onClick={handleClaim}
-              disabled={claimedToday}
-              className={`flex items-center gap-3 px-6 py-3 rounded-lg font-semibold transition ${
-                claimedToday
-                  ? "bg-gray-600 cursor-not-allowed"
-                  : "bg-cyan-500 hover:bg-cyan-400 text-black"
-              }`}
-            >
-              <Gift size={22} />
-              {claimedToday ? "Already Claimed Today" : "Claim Reward"}
-            </button>
+            {/* Daily Reward */}
+            <RewardCard
+              title="Daily Reward"
+              amount="5 USDT"
+              onClaim={claimDaily}
+              loading={loading}
+            />
 
-            {claimedToday && (
-              <p className="text-gray-300 mt-4">
-                Next claim available in:{" "}
-                <span className="text-cyan-400 font-bold">{timeLeft}</span>
-              </p>
-            )}
+            {/* Weekly Bonus */}
+            <RewardCard
+              title="Weekly Bonus"
+              amount="20 USDT"
+              disabled
+            />
+
+            {/* Referral Reward */}
+            <RewardCard
+              title="Referral Reward"
+              amount="10 USDT"
+              disabled
+            />
+
           </div>
         </div>
       </div>
     </AuthGuard>
+  );
+}
+
+function RewardCard({ title, amount, onClaim, loading, disabled }: any) {
+  return (
+    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">{title}</h2>
+        <Gift className="text-purple-400" />
+      </div>
+
+      <p className="text-gray-300">Reward Amount: {amount}</p>
+
+      <button
+        disabled={disabled || loading}
+        onClick={onClaim}
+        className={`mt-2 py-2 rounded-xl text-sm font-semibold transition ${
+          disabled
+            ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+            : "bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90"
+        }`}
+      >
+        {loading ? "Processing..." : disabled ? "Unavailable" : "Claim"}
+      </button>
+    </div>
   );
 }

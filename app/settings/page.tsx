@@ -1,83 +1,122 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
 import AuthGuard from "../components/AuthGuard";
+import Sidebar from "../dashboard/Sidebar";
 
 export default function SettingsPage() {
+  const [user, setUser] = useState<any>(null);
+  const [name, setName] = useState("");
+  const [language, setLanguage] = useState("en");
   const [theme, setTheme] = useState("dark");
   const [notifications, setNotifications] = useState(true);
-  const [sounds, setSounds] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const savedNotifications = localStorage.getItem("notifications");
-    const savedSounds = localStorage.getItem("sounds");
+    const stored = localStorage.getItem("user");
+    if (!stored) return;
 
-    if (savedTheme) setTheme(savedTheme);
-    if (savedNotifications) setNotifications(savedNotifications === "true");
-    if (savedSounds) setSounds(savedSounds === "true");
+    const u = JSON.parse(stored);
+    setUser(u);
+    setName(u.name || "");
   }, []);
 
-  const saveSettings = () => {
-    localStorage.setItem("theme", theme);
-    localStorage.setItem("notifications", notifications.toString());
-    localStorage.setItem("sounds", sounds.toString());
+  async function saveSettings() {
+    if (!user) return;
 
-    alert("Settings saved successfully");
-  };
+    setLoading(true);
+
+    const res = await fetch("/api/settings/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: user.email,
+        name,
+        language,
+        theme,
+        notifications,
+      }),
+    });
+
+    const data = await res.json();
+    setLoading(false);
+
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    const updated = { ...user, name };
+    localStorage.setItem("user", JSON.stringify(updated));
+    setUser(updated);
+
+    alert("Settings updated successfully");
+  }
+
+  if (!user) return null;
 
   return (
     <AuthGuard>
-      <div className="flex">
+      <div className="flex min-h-screen bg-black text-white">
         <Sidebar />
 
-        <div className="ml-64 w-full p-10 text-white">
-          <h1 className="text-3xl font-bold mb-6">Settings</h1>
+        <div className="flex-1 p-10 space-y-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 text-transparent bg-clip-text">
+            Settings
+          </h1>
 
-          <div className="bg-[#111] border border-[#333] p-8 rounded-lg max-w-xl">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 max-w-xl space-y-6">
 
-            {/* Theme */}
-            <div className="mb-6">
-              <label className="text-gray-300 font-semibold">Theme</label>
+            <div>
+              <p className="text-gray-400 text-sm mb-1">Full Name</p>
+              <input
+                type="text"
+                className="w-full px-4 py-2 bg-black/40 border border-white/10 rounded-xl"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <p className="text-gray-400 text-sm mb-1">Language</p>
               <select
-                value={theme}
-                onChange={(e) => setTheme(e.target.value)}
-                className="mt-2 p-3 w-full rounded-lg bg-[#1a1a1a] border border-[#333] text-white focus:border-cyan-400 outline-none"
+                className="w-full px-4 py-2 bg-black/40 border border-white/10 rounded-xl"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
               >
-                <option value="dark">Dark Mode</option>
-                <option value="light">Light Mode</option>
+                <option value="en">English</option>
+                <option value="ar">Arabic</option>
+                <option value="de">German</option>
               </select>
             </div>
 
-            {/* Notifications */}
-            <div className="mb-6 flex items-center justify-between">
-              <label className="text-gray-300 font-semibold">Notifications</label>
+            <div>
+              <p className="text-gray-400 text-sm mb-1">Theme</p>
+              <select
+                className="w-full px-4 py-2 bg-black/40 border border-white/10 rounded-xl"
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+              >
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3">
               <input
                 type="checkbox"
                 checked={notifications}
                 onChange={() => setNotifications(!notifications)}
-                className="w-5 h-5 cursor-pointer"
               />
+              <p className="text-gray-300">Enable Notifications</p>
             </div>
 
-            {/* Sounds */}
-            <div className="mb-6 flex items-center justify-between">
-              <label className="text-gray-300 font-semibold">Sound Effects</label>
-              <input
-                type="checkbox"
-                checked={sounds}
-                onChange={() => setSounds(!sounds)}
-                className="w-5 h-5 cursor-pointer"
-              />
-            </div>
-
-            {/* Save Button */}
             <button
               onClick={saveSettings}
-              className="mt-4 bg-cyan-400 hover:bg-cyan-300 text-black font-semibold py-3 rounded-lg transition w-full"
+              disabled={loading}
+              className="w-full py-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90 transition font-semibold"
             >
-              Save Settings
+              {loading ? "Saving..." : "Save Settings"}
             </button>
           </div>
         </div>

@@ -1,44 +1,75 @@
 "use client";
+
 import { useEffect, useState } from "react";
+import AuthGuard from "../components/AuthGuard";
+import Sidebar from "../dashboard/Sidebar";
 
 export default function TransactionsPage() {
+  const [user, setUser] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("transactions");
-    if (saved) {
-      setTransactions(JSON.parse(saved));
-    }
+    const stored = localStorage.getItem("user");
+    if (!stored) return;
+
+    const u = JSON.parse(stored);
+    setUser(u);
+
+    fetch("/api/wallet/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: u.email }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.transactions) setTransactions(data.transactions);
+      });
   }, []);
 
-  return (
-    <div className="p-10 text-white">
-      <h1 className="text-3xl font-bold mb-6">Transactions</h1>
+  if (!user) return null;
 
-      {transactions.length === 0 ? (
-        <p className="text-gray-400">No transactions yet.</p>
-      ) : (
-        <div className="bg-[#111] border border-[#333] rounded-lg p-6 w-full max-w-2xl">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-gray-400 border-b border-[#333]">
-                <th className="py-2">Type</th>
-                <th className="py-2">Amount</th>
-                <th className="py-2">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((t, index) => (
-                <tr key={index} className="border-b border-[#222]">
-                  <td className="py-2">{t.type}</td>
-                  <td className="py-2 text-cyan-400">{t.amount} USDT</td>
-                  <td className="py-2 text-gray-400">{t.date}</td>
-                </tr>
+  return (
+    <AuthGuard>
+      <div className="flex min-h-screen bg-black text-white">
+        <Sidebar />
+
+        <div className="flex-1 p-10 space-y-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 text-transparent bg-clip-text">
+            Transaction History
+          </h1>
+
+          {transactions.length === 0 ? (
+            <p className="text-gray-400">No transactions found.</p>
+          ) : (
+            <div className="space-y-4">
+              {transactions.map((t, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4"
+                >
+                  <div>
+                    <p className="font-semibold capitalize">{t.type}</p>
+                    <p className="text-gray-400 text-sm">
+                      {new Date(t.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <p
+                    className={
+                      t.type === "withdraw"
+                        ? "text-red-400 font-bold"
+                        : "text-green-400 font-bold"
+                    }
+                  >
+                    {t.type === "withdraw" ? "-" : "+"}
+                    {t.amount} USDT
+                  </p>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </AuthGuard>
   );
 }

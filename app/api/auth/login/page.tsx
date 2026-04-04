@@ -26,13 +26,16 @@ export default function LoginPage() {
         body: JSON.stringify(form),
       });
 
-      const data = await res.json();
+      const data = await res.json(); // ← هنا تعريف data
 
       if (!res.ok) {
         setError(data.error || "Login failed");
         setLoading(false);
         return;
       }
+
+      // ← هنا فقط نستخدم data
+      localStorage.setItem("user", JSON.stringify(data.user));
 
       router.push("/dashboard");
     } catch (err) {
@@ -86,14 +89,14 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-gray-400 mt-4">
-          Forgot your password?{" "}
+          Forgot your password{" "}
           <a href="/forgot" className="text-cyan-400 hover:underline">
             Reset it
           </a>
         </p>
 
         <p className="text-center text-gray-400 mt-2">
-          Don’t have an account?{" "}
+          Don’t have an account{" "}
           <a href="/register" className="text-purple-400 hover:underline">
             Create one
           </a>

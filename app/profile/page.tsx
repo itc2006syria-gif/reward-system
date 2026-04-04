@@ -1,80 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
 import AuthGuard from "../components/AuthGuard";
+import Sidebar from "../dashboard/Sidebar";
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<any>(null);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      setUser(parsed);
-      setName(parsed.name);
-      setEmail(parsed.email);
-    }
-  }, []);
-
-  const saveChanges = () => {
-    if (!name || !email) {
-      alert("Please fill all fields");
-      return;
-    }
-
-    const updatedUser = { name, email, password: user.password };
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-    setUser(updatedUser);
-
-    alert("Profile updated successfully");
-  };
-
   return (
     <AuthGuard>
-      <div className="flex">
+      <div className="flex min-h-screen bg-black text-white">
         <Sidebar />
 
-        <div className="ml-64 w-full p-10 text-white">
-          <h1 className="text-3xl font-bold mb-6">Profile</h1>
+        <div className="flex-1 p-10 space-y-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 text-transparent bg-clip-text">
+            Profile
+          </h1>
 
-          <div className="bg-[#111] border border-[#333] p-8 rounded-lg w-full max-w-xl">
-            <h2 className="text-xl font-semibold mb-6">Account Information</h2>
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 space-y-4 max-w-xl">
+            <ProfileField label="Name" value="Omar" />
+            <ProfileField label="Email" value="omar@example.com" />
+            <ProfileField label="Country" value="Germany" />
+            <ProfileField label="Preferred Network" value="TRON (USDT-TRC20)" />
 
-            {/* Name */}
-            <div className="flex flex-col mb-4">
-              <label className="text-gray-300 mb-1">Full Name</label>
-              <input
-                type="text"
-                className="p-3 rounded-lg bg-[#1a1a1a] border border-[#333] text-white focus:border-cyan-400 outline-none"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-
-            {/* Email */}
-            <div className="flex flex-col mb-4">
-              <label className="text-gray-300 mb-1">Email</label>
-              <input
-                type="email"
-                className="p-3 rounded-lg bg-[#1a1a1a] border border-[#333] text-white focus:border-cyan-400 outline-none"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            {/* Save Button */}
-            <button
-              onClick={saveChanges}
-              className="mt-4 bg-cyan-400 hover:bg-cyan-300 text-black font-semibold py-3 rounded-lg transition w-full"
-            >
-              Save Changes
+            <button className="mt-4 py-2 px-6 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90 transition text-sm font-semibold">
+              Update Profile
             </button>
           </div>
         </div>
       </div>
     </AuthGuard>
+  );
+}
+
+function ProfileField({ label, value }: any) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-gray-400 text-sm">{label}</span>
+      <input
+        defaultValue={value}
+        className="px-4 py-2 bg-black/40 border border-white/10 rounded-xl focus:border-cyan-500 outline-none text-sm"
+      />
+    </div>
   );
 }

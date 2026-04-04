@@ -1,87 +1,130 @@
 "use client";
+
 import { useEffect, useState } from "react";
+import AuthGuard from "../components/AuthGuard";
+import Sidebar from "../dashboard/Sidebar";
 
 export default function WalletPage() {
+  const [user, setUser] = useState<any>(null);
   const [balance, setBalance] = useState(0);
-  const [walletAddress, setWalletAddress] = useState("");
+  const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const savedBalance = localStorage.getItem("walletBalance");
-    const savedAddress = localStorage.getItem("walletAddress");
+    const stored = localStorage.getItem("user");
+    if (!stored) return;
 
-    if (savedBalance) setBalance(parseFloat(savedBalance));
-
-    if (savedAddress) {
-      setWalletAddress(savedAddress);
-    } else {
-      const newAddress =
-        "TR" + Math.random().toString(36).substring(2, 12).toUpperCase();
-      setWalletAddress(newAddress);
-      localStorage.setItem("walletAddress", newAddress);
-    }
+    const u = JSON.parse(stored);
+    setUser(u);
+    setBalance(u.balance || 0);
   }, []);
 
-  const saveTransaction = (type: string, amount: number) => {
-    const tx = {
-      type,
-      amount,
-      date: new Date().toLocaleString(),
-    };
+  async function deposit() {
+    if (!amount) return alert("Enter amount");
 
-    const savedTx = localStorage.getItem("transactions");
-    const txList = savedTx ? JSON.parse(savedTx) : [];
-    txList.unshift(tx);
-    localStorage.setItem("transactions", JSON.stringify(txList));
-  };
+    setLoading(true);
 
-  const addFunds = () => {
-    const newBalance = balance + 1;
-    setBalance(newBalance);
-    localStorage.setItem("walletBalance", newBalance.toString());
+    const res = await fetch("/api/wallet/deposit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user.email, amount: Number(amount) }),
+    });
 
-    saveTransaction("Manual Add", 1);
-  };
+    const data = await res.json();
+    setLoading(false);
 
-  const withdrawFunds = () => {
-    if (balance <= 0) return;
+    if (data.error) return alert(data.error);
 
-    const newBalance = balance - 1;
-    setBalance(newBalance);
-    localStorage.setItem("walletBalance", newBalance.toString());
+    setBalance(data.balance);
 
-    saveTransaction("Withdraw", -1);
-  };
+    // Update localStorage
+    const updated = { ...user, balance: data.balance };
+    localStorage.setItem("user", JSON.stringify(updated));
+    setUser(updated);
+
+    alert("Deposit successful");
+  }
+
+  async function withdraw() {
+    if (!amount) return alert("Enter amount");
+
+    setLoading(true);
+
+    const res = await fetch("/api/wallet/withdraw", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user.email, amount: Number(amount) }),
+    });
+
+    const data = await res.json();
+    setLoading(false);
+
+    if (data.error) return alert(data.error);
+
+    setBalance(data.balance);
+
+    // Update localStorage
+    const updated = { ...user, balance: data.balance };
+    localStorage.setItem("user", JSON.stringify(updated));
+    setUser(updated);
+
+    alert("Withdrawal successful");
+  }
+
+  if (!user) return null;
 
   return (
-    <div className="p-10 text-white">
-      <h1 className="text-3xl font-bold mb-4">Wallet</h1>
+    <AuthGuard>
+      <div className="flex min-h-screen bg-black text-white">
+        <Sidebar />
 
-      <div className="bg-[#111] border border-[#333] p-6 rounded-lg w-96">
-        <h2 className="text-xl font-semibold mb-4">USDT Balance</h2>
+        <div className="flex-1 p-10 space-y-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 text-transparent bg-clip-text">
+            Wallet
+          </h1>
 
-        <p className="text-3xl font-bold text-cyan-400 mb-4">{balance} USDT</p>
+          {/* Balance Card */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 max-w-md">
+            <p className="text-gray-400 text-sm">Current Balance</p>
+            <h2 className="text-4xl font-bold mt-2">{balance} USDT</h2>
+          </div>
 
-        <p className="text-gray-300 mb-6">
-          Wallet Address:{" "}
-          <span className="text-cyan-500">{walletAddress}</span>
-        </p>
+          {/* Deposit / Withdraw */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 max-w-md space-y-4">
+            <input
+              type="number"
+              placeholder="Enter amount"
+              className="w-full px-4 py-2 bg-black/40 border border-white/10 rounded-xl outline-none focus:border-cyan-500"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
 
-        <div className="flex gap-4">
-          <button
-            onClick={addFunds}
-            className="bg-green-500 hover:bg-green-400 text-black font-semibold py-2 px-4 rounded-lg transition"
+            <button
+              onClick={deposit}
+              disabled={loading}
+              className="w-full py-2 rounded-xl bg-gradient-to-r from-green-600 to-green-400 hover:opacity-90 transition font-semibold"
+            >
+              {loading ? "Processing..." : "Deposit"}
+            </button>
+
+            <button
+              onClick={withdraw}
+              disabled={loading}
+              className="w-full py-2 rounded-xl bg-gradient-to-r from-red-600 to-red-400 hover:opacity-90 transition font-semibold"
+            >
+              {loading ? "Processing..." : "Withdraw"}
+            </button>
+          </div>
+
+          {/* Link to Transactions */}
+          <a
+            href="/transactions"
+            className="text-cyan-400 hover:underline text-sm"
           >
-            + Add 1 USDT
-          </button>
-
-          <button
-            onClick={withdrawFunds}
-            className="bg-red-500 hover:bg-red-400 text-black font-semibold py-2 px-4 rounded-lg transition"
-          >
-            - Withdraw 1 USDT
-          </button>
+            View Transaction History →
+          </a>
         </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }
