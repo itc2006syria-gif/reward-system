@@ -3,16 +3,23 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 
 export async function POST(req: Request) {
-  await connectDB();
+  try {
+    await connectDB();
 
-  const { email } = await req.json();
-  const user = await User.findOne({ email });
+    const { email } = await req.json();
+    const user = await User.findOne({ email });
 
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!user) {
+      return NextResponse.json({ referrals: [] });
+    }
+
+    // إذا كان لديك نظام إحالات مستقبلاً، عدّل هنا
+    return NextResponse.json({
+      referrals: user.referrals || []
+    });
+
+  } catch (error) {
+    console.error("REFERRALS ERROR:", error);
+    return NextResponse.json({ referrals: [] });
   }
-
-  const referrals = await User.find({ referredBy: user.referralCode });
-
-  return NextResponse.json({ referrals });
 }

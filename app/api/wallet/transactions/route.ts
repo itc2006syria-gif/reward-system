@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
-import Transaction from "@/models/Transaction";
 
-export async function POST(req: Request) {
-  await connectDB();
-
-  const { email } = await req.json();
-
-  const transactions = await Transaction.find({ userEmail: email }).sort({
-    createdAt: -1,
-  });
-
-  return NextResponse.json({ transactions });
+export async function POST() {
+  try {
+    // لاحقاً يمكنك جلب معاملات حقيقية من قاعدة البيانات
+    return NextResponse.json({
+      transactions: []
+    });
+  } catch (error) {
+    console.error("TRANSACTIONS ERROR:", error);
+    return NextResponse.json({ transactions: [] });
+  }
 }
