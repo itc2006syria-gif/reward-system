@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AuthGuard from "../components/AuthGuard";
+import AuthGuard from "@/components/AuthGuard";
 import Sidebar from "../dashboard/Sidebar";
 
 export default function SettingsPage() {
