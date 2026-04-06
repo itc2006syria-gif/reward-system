@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AuthGuard from "@/compon
-ents/AuthGuard";
-
+import AuthGuard from "@/components/AuthGuard";
 export default function DashboardPage() {
   const [notifications, setNotifications] = useState(0);
   const [referrals, setReferrals] = useState(0);
