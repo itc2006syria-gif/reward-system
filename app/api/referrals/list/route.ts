@@ -13,7 +13,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ referrals: [] });
     }
 
-    // إذا كان لديك نظام إحالات مستقبلاً، عدّل هنا
     return NextResponse.json({
       referrals: user.referrals || []
     });

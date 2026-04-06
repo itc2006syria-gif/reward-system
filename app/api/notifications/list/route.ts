@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 
 export async function POST() {
   try {
-    // لاحقاً يمكنك إضافة نظام إشعارات حقيقي
     return NextResponse.json({
       notifications: []
     });
